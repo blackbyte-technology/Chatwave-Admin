@@ -105,7 +105,7 @@ export function DashboardDateFilter({ onFilterChange }: DashboardDateFilterProps
           </PopoverTrigger>
           <PopoverContent className="w-auto p-0 dark:bg-(--card-color) border-(--input-border-color) dark:border-(--card-border-color) rounded-xl shadow-2xl" align="end">
             <Calendar
-              initialFocus
+              autoFocus
               mode="range"
               defaultMonth={customRange?.from}
               selected={customRange}

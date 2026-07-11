@@ -5,7 +5,8 @@ import { Input } from "@/src/elements/ui/input";
 import { Label } from "@/src/elements/ui/label";
 import { Textarea } from "@/src/elements/ui/textarea";
 import { Button } from "@/src/elements/ui/button";
-import { Plus, Trash2, Twitter, Linkedin, Facebook, Instagram, Share2, Shield } from "lucide-react";
+import { Plus, Trash2, Share2, Shield } from "lucide-react";
+import { Twitter, Linkedin, Facebook, Instagram } from "@/src/components/icons/BrandIcons";
 import { FooterSection } from "@/src/types/landingPage";
 
 interface FooterFormProps {
