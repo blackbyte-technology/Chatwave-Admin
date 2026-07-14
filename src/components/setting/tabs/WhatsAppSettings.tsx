@@ -96,11 +96,11 @@ const WhatsAppSettings = () => {
             <Label className="text-sm font-medium text-gray-700 dark:text-gray-300">WhatsApp Webhook URL</Label>
             <Input
               type={storedSettings?.show_whatsapp_config ? "text" : "password"}
-              value={storedSettings?.show_whatsapp_config ? `${ImageBaseUrl ?? ""}${settings.whatsapp_webhook_url ?? ""}` : (settings.whatsapp_webhook_url ? "••••••••" : "")}
+              value={storedSettings?.show_whatsapp_config ? (settings.whatsapp_webhook_url ?? "") : (settings.whatsapp_webhook_url ? "••••••••" : "")}
               onChange={(e) => onChange("whatsapp_webhook_url", e.target.value)}
               placeholder="https://yourdomain.com/api/webhook/whatsapp"
-              className="h-11 bg-(--input-color) dark:bg-page-body border-(--input-border-color) p-3"
-              disabled
+              readOnly={!storedSettings?.show_whatsapp_config}
+              className={`h-11 bg-(--input-color) dark:bg-page-body border-(--input-border-color) p-3 ${!storedSettings?.show_whatsapp_config ? "opacity-70 cursor-not-allowed" : ""}`}
             />
           </div>
         </div>
