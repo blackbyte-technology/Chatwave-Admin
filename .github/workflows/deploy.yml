@@ -1,0 +1,97 @@
+name: Build & Deploy Admin to EC2
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+env:
+  NEXT_PUBLIC_API_URL: http://13.126.170.115:5080/api
+  NEXT_PUBLIC_API_BASE_URL: /api
+  NEXT_PUBLIC_STORAGE_URL: http://13.126.170.115:5080/
+  NEXT_PUBLIC_WAPI_FRONT_URL: http://13.126.170.115
+
+jobs:
+  build-and-deploy:
+    name: Build & Deploy Admin
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build production
+        run: npm run build
+
+      - name: Package standalone build
+        run: |
+          tar -czf /tmp/admin-deploy.tar.gz -C .next/standalone .
+          tar -czf /tmp/admin-static.tar.gz -C .next static
+          tar -czf /tmp/admin-public.tar.gz -C public .
+
+      - name: Upload to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "/tmp/admin-deploy.tar.gz,/tmp/admin-static.tar.gz,/tmp/admin-public.tar.gz"
+          target: /tmp
+          strip_components: 1
+
+      - name: Deploy & Restart
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ubuntu
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            set -e
+            echo ">>> Deploying ChatWave Admin..."
+            cd /home/ubuntu/chatwave/admin
+
+            # Preserve .env
+            cp .env /tmp/admin-env-backup 2>/dev/null || true
+
+            # Clean and extract
+            find . -maxdepth 1 ! -name '.env' ! -name '.' -exec rm -rf {} +
+            tar -xzf /tmp/admin-deploy.tar.gz
+            mkdir -p .next public
+            tar -xzf /tmp/admin-static.tar.gz -C .next/
+            tar -xzf /tmp/admin-public.tar.gz -C public/
+
+            # Handle nested dir
+            if [ -d "Chatwave-Admin" ]; then
+              cp -r Chatwave-Admin/* . 2>/dev/null || true
+              rm -rf Chatwave-Admin
+            fi
+
+            # Restore .env
+            cp /tmp/admin-env-backup .env 2>/dev/null || true
+
+            # Cleanup
+            rm -f /tmp/admin-deploy.tar.gz /tmp/admin-static.tar.gz /tmp/admin-public.tar.gz /tmp/admin-env-backup
+
+            echo ">>> Restarting admin..."
+            pm2 delete chatwave-admin 2>/dev/null || true
+            PORT=3001 HOSTNAME=0.0.0.0 pm2 start server.js --name chatwave-admin
+            pm2 save
+
+            sleep 5
+            STATUS=$(curl -sf -o /dev/null -w '%{http_code}' http://localhost:3001 || echo "000")
+            if [ "$STATUS" = "308" ] || [ "$STATUS" = "200" ]; then
+              echo "✅ Admin deployed successfully! (HTTP $STATUS)"
+            else
+              echo "❌ Health check failed! (HTTP $STATUS)"
+              pm2 logs chatwave-admin --lines 20 --nostream
+              exit 1
+            fi
