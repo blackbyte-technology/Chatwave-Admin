@@ -34,9 +34,10 @@ jobs:
 
       - name: Package standalone build
         run: |
-          tar -czf /tmp/admin-deploy.tar.gz -C .next/standalone .
-          tar -czf /tmp/admin-static.tar.gz -C .next static
-          tar -czf /tmp/admin-public.tar.gz -C public .
+          mkdir -p deploy-artifacts
+          tar -czf deploy-artifacts/admin-deploy.tar.gz -C .next/standalone .
+          tar -czf deploy-artifacts/admin-static.tar.gz -C .next static
+          tar -czf deploy-artifacts/admin-public.tar.gz -C public .
 
       - name: Upload to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -44,9 +45,9 @@ jobs:
           host: ${{ secrets.EC2_HOST }}
           username: ubuntu
           key: ${{ secrets.EC2_SSH_KEY }}
-          source: "/tmp/admin-deploy.tar.gz,/tmp/admin-static.tar.gz,/tmp/admin-public.tar.gz"
-          target: /tmp
-          strip_components: 1
+          source: "deploy-artifacts/*"
+          target: /tmp/admin-upload
+          overwrite: true
 
       - name: Deploy & Restart
         uses: appleboy/ssh-action@v1.2.2
@@ -64,10 +65,10 @@ jobs:
 
             # Clean and extract
             find . -maxdepth 1 ! -name '.env' ! -name '.' -exec rm -rf {} +
-            tar -xzf /tmp/admin-deploy.tar.gz
+            tar -xzf /tmp/admin-upload/deploy-artifacts/admin-deploy.tar.gz
             mkdir -p .next public
-            tar -xzf /tmp/admin-static.tar.gz -C .next/
-            tar -xzf /tmp/admin-public.tar.gz -C public/
+            tar -xzf /tmp/admin-upload/deploy-artifacts/admin-static.tar.gz -C .next/
+            tar -xzf /tmp/admin-upload/deploy-artifacts/admin-public.tar.gz -C public/
 
             # Handle nested dir
             if [ -d "Chatwave-Admin" ]; then
@@ -79,7 +80,7 @@ jobs:
             cp /tmp/admin-env-backup .env 2>/dev/null || true
 
             # Cleanup
-            rm -f /tmp/admin-deploy.tar.gz /tmp/admin-static.tar.gz /tmp/admin-public.tar.gz /tmp/admin-env-backup
+            rm -rf /tmp/admin-upload /tmp/admin-env-backup
 
             echo ">>> Restarting admin..."
             pm2 delete chatwave-admin 2>/dev/null || true
