@@ -13,7 +13,7 @@ export interface CookieOptions {
 const DEFAULT_OPTIONS: CookieOptions = {
   path: "/",
   sameSite: "Strict",
-  secure: process.env.NODE_ENV === "production",
+  secure: process.env.NEXT_PUBLIC_SECURE_COOKIES === "true",
   maxAge: 7 * 24 * 60 * 60,
 };
 

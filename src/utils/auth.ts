@@ -8,7 +8,7 @@ const USER_KEY = "userData";
 const getCookieOptions = () => ({
   path: "/",
   maxAge: 7 * 24 * 60 * 60, // 7 days
-  secure: process.env.NODE_ENV === "production",
+  secure: process.env.NEXT_PUBLIC_SECURE_COOKIES === "true",
   sameSite: "Strict" as const,
 });
 
