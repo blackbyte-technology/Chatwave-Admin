@@ -45,7 +45,7 @@ interface UserListProps {
   searchTerm?: string;
 }
 
-const WAPI_FRONT_URL = process.env.NEXT_PUBLIC_WAPI_FRONT_URL || "http://localhost:3000";
+const CHATWAVE_FRONT_URL = process.env.NEXT_PUBLIC_CHATWAVE_FRONT_URL || "http://localhost:3000";
 
 const UserList = ({
   users,
@@ -100,7 +100,7 @@ const UserList = ({
       const result = await startImpersonation({
         targetUserId: user._id,
       }).unwrap();
-      window.location.href = `${WAPI_FRONT_URL}/auth/impersonate?token=${result.token}`;
+      window.location.href = `${CHATWAVE_FRONT_URL}/auth/impersonate?token=${result.token}`;
     } catch (err: any) {
       toast.error(err?.data?.message || t("common_error"));
       setImpersonatingId(null);
